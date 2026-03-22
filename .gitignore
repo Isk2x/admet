@@ -1,0 +1,13 @@
+venv/
+data/
+artifacts/
+__pycache__/
+*.pyc
+*.egg-info/
+.DS_Store
+*.pt
+*.pkl
+*.npy
+.cursorrules
+cursor/
+docs/
