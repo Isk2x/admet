@@ -172,7 +172,11 @@ def build_3d_dataset(df, task_columns=None, seed=42):
         else:
             y_tasks = np.array([row.get("y", 0.0)])
 
-        data = smiles_to_3d(row["smiles"], y_tasks, seed=seed)
+        try:
+            data = smiles_to_3d(row["smiles"], y_tasks, seed=seed)
+        except Exception:
+            data = None
+
         if data is not None:
             dataset.append(data)
         else:
@@ -196,8 +200,12 @@ def build_3d_multi_dataset(df, task_columns=None, num_confs=5, seed=42):
         else:
             y_tasks = np.array([row.get("y", 0.0)])
 
-        confs = smiles_to_3d_multi(row["smiles"], y_tasks,
-                                   num_confs=num_confs, seed=seed)
+        try:
+            confs = smiles_to_3d_multi(row["smiles"], y_tasks,
+                                       num_confs=num_confs, seed=seed)
+        except Exception:
+            confs = []
+
         if confs:
             dataset.append(confs)
         else:
