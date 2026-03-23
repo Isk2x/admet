@@ -30,7 +30,11 @@ def _generate_conformer(mol_h, seed=42, max_attempts=3):
     params.randomSeed = seed
     params.useSmallRingTorsions = True
 
-    status = AllChem.EmbedMolecule(mol_h, params)
+    try:
+        status = AllChem.EmbedMolecule(mol_h, params)
+    except RuntimeError:
+        return None, False
+
     if status != 0:
         return None, False
 
@@ -52,7 +56,11 @@ def _generate_multi_conformers(mol_h, num_confs=5, seed=42):
     params.useSmallRingTorsions = True
     params.pruneRmsThresh = 0.5
 
-    conf_ids = AllChem.EmbedMultipleConfs(mol_h, numConfs=num_confs, params=params)
+    try:
+        conf_ids = AllChem.EmbedMultipleConfs(mol_h, numConfs=num_confs, params=params)
+    except RuntimeError:
+        return []
+
     if len(conf_ids) == 0:
         return []
 
