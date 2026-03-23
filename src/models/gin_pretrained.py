@@ -486,6 +486,58 @@ def masked_bce_loss(pred, target):
     return F.binary_cross_entropy_with_logits(pred_masked, target_masked)
 
 
+class UncertaintyWeightedLoss(nn.Module):
+    """
+    Uncertainty-Weighted Multi-Task Loss (Kendall et al. 2018).
+
+    Каждая задача получает обучаемый параметр log(σ²). Потери взвешиваются
+    как L_i / (2·σ²_i) + log(σ_i), позволяя модели автоматически снижать
+    вес шумных/сложных задач и повышать вес информативных.
+
+    Это принципиально отличается от равного взвешивания или ручного подбора:
+    модель обучает оптимальный баланс из данных.
+    """
+
+    def __init__(self, num_tasks: int):
+        super().__init__()
+        self.log_vars = nn.Parameter(torch.zeros(num_tasks))
+
+    def forward(self, pred, target):
+        mask = ~torch.isnan(target)
+        if mask.sum() == 0:
+            return torch.tensor(0.0, device=pred.device, requires_grad=True)
+
+        total_loss = torch.tensor(0.0, device=pred.device)
+        num_valid_tasks = 0
+
+        for t in range(pred.size(1)):
+            task_mask = mask[:, t]
+            if task_mask.sum() < 2:
+                continue
+
+            task_pred = pred[task_mask, t]
+            task_target = target[task_mask, t]
+
+            bce = F.binary_cross_entropy_with_logits(
+                task_pred, task_target, reduction="mean"
+            )
+
+            precision = torch.exp(-self.log_vars[t])
+            task_loss = precision * bce + self.log_vars[t]
+            total_loss = total_loss + task_loss
+            num_valid_tasks += 1
+
+        if num_valid_tasks == 0:
+            return torch.tensor(0.0, device=pred.device, requires_grad=True)
+
+        return total_loss / num_valid_tasks
+
+    def get_task_weights(self):
+        """Текущие веса задач (1/σ²) для интроспекции."""
+        with torch.no_grad():
+            return torch.exp(-self.log_vars).cpu().numpy()
+
+
 def masked_focal_loss(pred, target, gamma=2.0, alpha=0.25):
     """
     Focal Loss с маскированием NaN-меток.
@@ -506,8 +558,9 @@ def masked_focal_loss(pred, target, gamma=2.0, alpha=0.25):
 
 
 def train_epoch_multitask(model, loader, optimizer, device, xai_loss_fn=None,
-                          xai_lambda=0.0, loss_fn=None):
-    """Один эпох multi-task обучения с опциональным XAI-loss."""
+                          xai_lambda=0.0, loss_fn=None,
+                          toxicophore_loss_fn=None, toxicophore_lambda=0.0):
+    """Один эпох multi-task обучения с опциональным XAI и toxicophore loss."""
     if loss_fn is None:
         loss_fn = masked_bce_loss
     model.train()
@@ -526,12 +579,16 @@ def train_epoch_multitask(model, loader, optimizer, device, xai_loss_fn=None,
         if xai_loss_fn is not None and xai_lambda > 0:
             loss_xai = xai_loss_fn(model, batch, device)
 
-        loss = loss_task + xai_lambda * loss_xai
+        loss_tox = torch.tensor(0.0, device=device)
+        if toxicophore_loss_fn is not None and toxicophore_lambda > 0:
+            loss_tox = toxicophore_loss_fn(model, batch, device)
+
+        loss = loss_task + xai_lambda * loss_xai + toxicophore_lambda * loss_tox
         loss.backward()
         optimizer.step()
 
         total_loss += loss_task.item() * batch.num_graphs
-        total_xai += loss_xai.item() * batch.num_graphs
+        total_xai += (loss_xai.item() + loss_tox.item()) * batch.num_graphs
         n_graphs += batch.num_graphs
 
     return total_loss / n_graphs, total_xai / n_graphs
@@ -575,6 +632,9 @@ def train_gin(
     backbone_type: str = "standard",
     pool_type: str = "mean",
     use_focal_loss: bool = False,
+    use_uncertainty_loss: bool = False,
+    toxicophore_loss_fn=None,
+    toxicophore_lambda: float = 0.0,
 ):
     """
     Обучение GIN multi-task модели.
@@ -587,6 +647,9 @@ def train_gin(
         backbone_type: 'standard' | 'vn' | 'ogb' | 'ogb_vn'
         pool_type: 'mean' | 'attention'
         use_focal_loss: использовать focal loss вместо BCE
+        use_uncertainty_loss: Uncertainty-Weighted MTL (Kendall et al. 2018)
+        toxicophore_loss_fn: Toxicophore-Guided XAI loss (или None)
+        toxicophore_lambda: вес toxicophore loss
     """
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -597,9 +660,11 @@ def train_gin(
     ogb_label = "+OGB" if "ogb" in backbone_type else ""
     attn_label = "+Attn" if pool_type == "attention" else ""
     focal_label = "+Focal" if use_focal_loss else ""
+    unc_label = "+UncMTL" if use_uncertainty_loss else ""
+    tox_label = f"+Tox(λ={toxicophore_lambda})" if toxicophore_lambda > 0 else ""
 
     print(f"\n{'='*60}")
-    print(f"Обучение {model_name}: GIN ({pretrained_label}{vn_label}{ogb_label}{attn_label}{focal_label}{xai_label})")
+    print(f"Обучение {model_name}: GIN ({pretrained_label}{vn_label}{ogb_label}{attn_label}{focal_label}{unc_label}{tox_label}{xai_label})")
     print(f"Задач: {num_tasks}, Устройство: {device}")
     print(f"{'='*60}")
 
@@ -616,6 +681,11 @@ def train_gin(
     if pretrained:
         model.load_pretrained(pretrained)
 
+    uncertainty_loss = None
+    if use_uncertainty_loss:
+        uncertainty_loss = UncertaintyWeightedLoss(num_tasks).to(device)
+        print(f"  Uncertainty-Weighted MTL включён ({num_tasks} обучаемых σ²)")
+
     if backbone_lr is not None and backbone_lr != lr:
         param_groups = [
             {"params": model.backbone.parameters(), "lr": backbone_lr},
@@ -623,16 +693,26 @@ def train_gin(
         ]
         if pool_type == "attention":
             param_groups.append({"params": model.pool.parameters(), "lr": lr})
+        if uncertainty_loss is not None:
+            param_groups.append({"params": uncertainty_loss.parameters(), "lr": lr})
         print(f"  Differential LR: backbone={backbone_lr}, head={lr}")
     else:
-        param_groups = model.parameters()
+        all_params = list(model.parameters())
+        if uncertainty_loss is not None:
+            all_params += list(uncertainty_loss.parameters())
+        param_groups = all_params
 
     optimizer = torch.optim.Adam(param_groups, lr=lr, weight_decay=1e-5)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="max", factor=0.5, patience=7
     )
 
-    loss_fn = masked_focal_loss if use_focal_loss else masked_bce_loss
+    if use_uncertainty_loss and uncertainty_loss is not None:
+        loss_fn = uncertainty_loss
+    elif use_focal_loss:
+        loss_fn = masked_focal_loss
+    else:
+        loss_fn = masked_bce_loss
 
     best_val_metric = -1
     best_epoch = 0
@@ -643,6 +723,8 @@ def train_gin(
             model, train_loader, optimizer, device,
             xai_loss_fn=xai_loss_fn, xai_lambda=xai_lambda,
             loss_fn=loss_fn,
+            toxicophore_loss_fn=toxicophore_loss_fn,
+            toxicophore_lambda=toxicophore_lambda,
         )
 
         val_metrics = evaluate_multitask(model, val_loader, device, task_names)
@@ -679,7 +761,9 @@ def train_gin(
         "backbone_type": backbone_type,
         "pool_type": pool_type,
         "use_focal_loss": use_focal_loss,
+        "use_uncertainty_loss": use_uncertainty_loss,
         "xai_lambda": xai_lambda,
+        "toxicophore_lambda": toxicophore_lambda,
         "best_epoch": best_epoch,
         "val": val_metrics,
         "test": test_metrics,
@@ -687,6 +771,16 @@ def train_gin(
         "val_size": len(val_data),
         "test_size": len(test_data),
     }
+
+    if uncertainty_loss is not None:
+        weights = uncertainty_loss.get_task_weights()
+        names = task_names or [f"task_{i}" for i in range(num_tasks)]
+        results["learned_task_weights"] = {
+            n: round(float(w), 4) for n, w in zip(names, weights)
+        }
+        print(f"\nОбученные веса задач (1/σ²):")
+        for n, w in zip(names, weights):
+            print(f"  {n}: {w:.4f}")
 
     if save_dir:
         save_path = Path(save_dir)

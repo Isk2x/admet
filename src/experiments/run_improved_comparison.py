@@ -1,5 +1,5 @@
 """
-Эксперимент E4: Улучшенное сравнение GIN-моделей (multi-seed, VN, OGB, Focal, Attn).
+Эксперимент E4: Улучшенное сравнение GIN-моделей (multi-seed).
 
 Запускает все варианты модели с 3 seeds и scaffold split:
   1. GIN scratch (baseline)
@@ -7,7 +7,10 @@
   3. GIN + OGB features + Virtual Node
   4. GIN + VN + Attention pooling
   5. GIN + VN + Focal loss
-  6. GIN pretrained + VN + XAI loss (итоговая модель)
+  6. GIN pretrained + VN + XAI loss
+  7. GIN + VN + Uncertainty-Weighted MTL (Kendall 2018)
+  8. GIN + VN + Toxicophore-Guided XAI
+  9. GIN pretrained + VN + UncMTL + XAI + Toxicophore (full)
 
 Отчёт: mean ± std ROC-AUC по 3 seeds.
 """
@@ -27,7 +30,7 @@ from src.data.loader_multitask import load_tox21_multitask, TOX21_TASKS
 from src.data.splitter import scaffold_split
 from src.data.featurizer_gin import build_gin_dataset
 from src.models.gin_pretrained import train_gin, download_pretrained
-from src.models.xai_loss import combined_xai_loss
+from src.models.xai_loss import combined_xai_loss, compute_toxicophore_loss
 
 ARTIFACTS_DIR = ROOT / "artifacts"
 METRICS_DIR = ARTIFACTS_DIR / "metrics"
@@ -90,6 +93,39 @@ MODEL_CONFIGS = [
         "xai_lambda": 0.1,
         "ogb_features": False,
     },
+    {
+        "name": "gin_vn_uncmtl",
+        "backbone_type": "vn",
+        "pool_type": "mean",
+        "pretrained": None,
+        "use_focal_loss": False,
+        "use_uncertainty_loss": True,
+        "xai_lambda": 0.0,
+        "toxicophore_lambda": 0.0,
+        "ogb_features": False,
+    },
+    {
+        "name": "gin_vn_toxguided",
+        "backbone_type": "vn",
+        "pool_type": "mean",
+        "pretrained": None,
+        "use_focal_loss": False,
+        "use_uncertainty_loss": False,
+        "xai_lambda": 0.1,
+        "toxicophore_lambda": 0.05,
+        "ogb_features": False,
+    },
+    {
+        "name": "gin_pretrained_vn_full",
+        "backbone_type": "vn",
+        "pool_type": "mean",
+        "pretrained": "supervised_contextpred",
+        "use_focal_loss": False,
+        "use_uncertainty_loss": True,
+        "xai_lambda": 0.1,
+        "toxicophore_lambda": 0.05,
+        "ogb_features": False,
+    },
 ]
 
 
@@ -123,6 +159,11 @@ def run_single_seed(seed: int, model_configs: list):
         if cfg["xai_lambda"] > 0:
             xai_fn = partial(combined_xai_loss, faith_weight=0.5, stab_weight=0.5)
 
+        tox_fn = None
+        tox_lambda = cfg.get("toxicophore_lambda", 0.0)
+        if tox_lambda > 0:
+            tox_fn = compute_toxicophore_loss
+
         if cfg["pretrained"]:
             download_pretrained(cfg["pretrained"])
 
@@ -142,6 +183,9 @@ def run_single_seed(seed: int, model_configs: list):
             backbone_type=cfg["backbone_type"],
             pool_type=cfg["pool_type"],
             use_focal_loss=cfg["use_focal_loss"],
+            use_uncertainty_loss=cfg.get("use_uncertainty_loss", False),
+            toxicophore_loss_fn=tox_fn,
+            toxicophore_lambda=tox_lambda,
         )
         seed_results[cfg["name"]] = results
 

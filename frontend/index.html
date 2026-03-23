@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PharmaKinetics — Предсказание токсичности</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="app">
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">PK</div>
+            <div>
+                <h1>PharmaKinetics</h1>
+                <p class="subtitle">Предсказание токсичности молекул с объяснением</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <section class="input-section">
+            <div class="input-group">
+                <label for="smiles-input">SMILES молекулы</label>
+                <div class="input-row">
+                    <input
+                        type="text"
+                        id="smiles-input"
+                        placeholder="Например: CC(=O)Oc1ccccc1C(=O)O"
+                        spellcheck="false"
+                        autocomplete="off"
+                    />
+                    <select id="model-select" class="model-select">
+                        <option value="gin" selected>GIN (~2M)</option>
+                    </select>
+                    <button id="predict-btn" onclick="predict()">
+                        <span class="btn-text">Анализировать</span>
+                        <span class="btn-spinner"></span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="examples">
+                <span class="examples-label">Примеры:</span>
+                <button class="example-btn" onclick="setSmiles('CC(=O)Oc1ccccc1C(=O)O')">Аспирин</button>
+                <button class="example-btn" onclick="setSmiles('c1ccc2c(c1)[nH]c1ccccc12')">Карбазол</button>
+                <button class="example-btn" onclick="setSmiles('O=[N+]([O-])c1ccc2ccccc2c1')">2-Нитронафталин</button>
+                <button class="example-btn" onclick="setSmiles('ClC1=CC=C(C=C1)C(C1=CC=C(Cl)C=C1)C(Cl)(Cl)Cl')">DDT</button>
+                <button class="example-btn" onclick="setSmiles('CC12CCC3c4ccc(O)cc4CCC3C1CCC2O')">Эстрадиол</button>
+                <button class="example-btn" onclick="setSmiles('O=C(O)c1ccccc1O')">Салициловая кислота</button>
+            </div>
+        </section>
+
+        <div id="error-box" class="error-box" hidden></div>
+
+        <section id="results" class="results" hidden>
+            <div class="results-grid">
+
+                <div class="card molecule-card">
+                    <h2>Структура молекулы</h2>
+                    <p class="card-subtitle" id="canonical-smiles"></p>
+                    <div id="molecule-svg" class="molecule-svg"></div>
+                    <div class="legend">
+                        <div class="legend-bar"></div>
+                        <div class="legend-labels">
+                            <span>Низкая важность</span>
+                            <span>Высокая важность</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card summary-card">
+                    <h2>Общая оценка</h2>
+                    <div id="overall-gauge" class="gauge-container"></div>
+                    <div class="model-info">
+                        <span id="model-badge" class="badge"></span>
+                        <span id="params-badge" class="badge badge-muted"></span>
+                        <span id="atoms-badge" class="badge badge-muted"></span>
+                    </div>
+                </div>
+
+                <div class="card tasks-card">
+                    <h2>Результаты по задачам Tox21</h2>
+                    <div id="tasks-list" class="tasks-list"></div>
+                </div>
+
+                <div class="card atoms-card">
+                    <h2>Атомная атрибуция</h2>
+                    <p class="card-subtitle">Вклад каждого атома в предсказание токсичности</p>
+                    <div id="atoms-chart" class="atoms-chart"></div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>PharmaKinetics MVP &mdash; GIN + ChemBERTa + XAI &mdash; MIPT 2026</p>
+    </footer>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

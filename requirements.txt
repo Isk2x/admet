@@ -7,3 +7,6 @@ torch
 torch-geometric
 matplotlib
 tqdm
+fastapi
+uvicorn
+transformers

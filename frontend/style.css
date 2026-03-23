@@ -1,0 +1,537 @@
+/* PharmaKinetics MVP — стили */
+
+:root {
+    --bg: #0f1117;
+    --bg-card: #1a1d27;
+    --bg-input: #252833;
+    --border: #2d3140;
+    --text: #e4e6ed;
+    --text-muted: #8b8fa3;
+    --accent: #6366f1;
+    --accent-hover: #818cf8;
+    --danger: #ef4444;
+    --danger-bg: rgba(239, 68, 68, 0.12);
+    --success: #22c55e;
+    --success-bg: rgba(34, 197, 94, 0.12);
+    --warning: #f59e0b;
+    --warning-bg: rgba(245, 158, 11, 0.12);
+    --radius: 12px;
+    --radius-sm: 8px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+}
+
+.app {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* Header */
+
+.header {
+    padding: 32px 0 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.logo-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--accent), #a855f7);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: -0.5px;
+    color: white;
+}
+
+.header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+.subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+/* Input Section */
+
+.input-section {
+    margin-bottom: 24px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.input-row {
+    display: flex;
+    gap: 12px;
+}
+
+.input-row input {
+    flex: 1;
+    padding: 14px 18px;
+    font-size: 16px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input-row input:focus {
+    border-color: var(--accent);
+}
+
+.input-row input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+
+.model-select {
+    padding: 14px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    outline: none;
+    cursor: pointer;
+    min-width: 200px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b8fa3' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+    transition: border-color 0.2s;
+}
+
+.model-select:focus {
+    border-color: var(--accent);
+}
+
+.model-select option {
+    background: var(--bg-card);
+    color: var(--text);
+}
+
+.model-select option:disabled {
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+
+#predict-btn {
+    padding: 14px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+    min-width: 160px;
+}
+
+#predict-btn:hover {
+    background: var(--accent-hover);
+}
+
+#predict-btn:active {
+    transform: scale(0.98);
+}
+
+#predict-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-spinner {
+    display: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+}
+
+.btn-spinner.visible {
+    display: inline-block;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Examples */
+
+.examples {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.examples-label {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.example-btn {
+    padding: 6px 14px;
+    font-size: 13px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.example-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
+}
+
+/* Error */
+
+.error-box {
+    padding: 14px 18px;
+    background: var(--danger-bg);
+    border: 1px solid var(--danger);
+    border-radius: var(--radius-sm);
+    color: var(--danger);
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+/* Results Grid */
+
+.results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+}
+
+.card h2 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-muted);
+}
+
+.card-subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    opacity: 0.7;
+    margin-bottom: 16px;
+}
+
+/* Molecule Card */
+
+.molecule-card {
+    grid-column: 1;
+    grid-row: 1 / 3;
+}
+
+.molecule-svg {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+    margin: 16px 0;
+    background: rgba(255,255,255,0.03);
+    border-radius: var(--radius-sm);
+}
+
+.molecule-svg svg {
+    max-width: 100%;
+    height: auto;
+}
+
+.legend {
+    margin-top: 8px;
+}
+
+.legend-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(to right, #22c55e, #facc15, #ef4444);
+}
+
+.legend-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* Summary Card (Gauge) */
+
+.summary-card {
+    grid-column: 2;
+    grid-row: 1;
+    text-align: center;
+}
+
+.gauge-container {
+    margin: 20px 0 16px;
+}
+
+.gauge-ring {
+    transform: rotate(-90deg);
+}
+
+.gauge-bg { fill: none; stroke: var(--bg-input); stroke-width: 10; }
+.gauge-fill { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 0.8s ease-out; }
+
+.gauge-label {
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+}
+
+.gauge-sublabel {
+    font-size: 13px;
+    fill: var(--text-muted);
+}
+
+.model-info {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.badge {
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--accent);
+    border-radius: 20px;
+}
+
+.badge-muted {
+    background: var(--bg-input);
+    color: var(--text-muted);
+}
+
+.badge-transformer {
+    background: rgba(168, 85, 247, 0.15);
+    color: #a855f7;
+}
+
+/* Tasks List */
+
+.tasks-card {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+.tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.task-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    font-size: 14px;
+}
+
+.task-name {
+    flex: 1;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+}
+
+.task-bar-container {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-input);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.task-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease-out;
+}
+
+.task-prob {
+    width: 52px;
+    text-align: right;
+    font-weight: 600;
+    font-size: 13px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.task-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+    min-width: 30px;
+    text-align: center;
+}
+
+.task-badge.toxic {
+    background: var(--danger-bg);
+    color: var(--danger);
+}
+
+.task-badge.safe {
+    background: var(--success-bg);
+    color: var(--success);
+}
+
+/* Atoms Chart */
+
+.atoms-card {
+    grid-column: 1 / -1;
+}
+
+.atoms-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 160px;
+    margin-top: 16px;
+    padding-top: 8px;
+}
+
+.atom-bar-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 24px;
+}
+
+.atom-bar {
+    width: 100%;
+    max-width: 32px;
+    border-radius: 4px 4px 0 0;
+    transition: height 0.5s ease-out;
+    min-height: 2px;
+}
+
+.atom-label {
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.atom-value {
+    font-size: 10px;
+    color: var(--text-muted);
+    opacity: 0.7;
+    margin-bottom: 4px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+/* Footer */
+
+.footer {
+    text-align: center;
+    padding: 32px 0;
+    font-size: 13px;
+    color: var(--text-muted);
+    opacity: 0.5;
+    margin-top: 40px;
+    border-top: 1px solid var(--border);
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .molecule-card {
+        grid-column: 1;
+        grid-row: auto;
+    }
+
+    .tasks-card, .summary-card {
+        grid-column: 1;
+        grid-row: auto;
+    }
+
+    .atoms-card {
+        grid-column: 1;
+    }
+
+    .input-row {
+        flex-direction: column;
+    }
+}
+
+/* Scrollbar */
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
