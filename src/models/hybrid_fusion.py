@@ -169,8 +169,11 @@ def build_paired_dataset(df, task_columns, build_gin_fn, build_3d_fn):
         y_tasks = row[task_columns].values.astype(float)
         smiles = row["smiles"]
 
-        data_2d = build_gin_fn(smiles, y_tasks)
-        data_3d = build_3d_fn(smiles, y_tasks)
+        try:
+            data_2d = build_gin_fn(smiles, y_tasks)
+            data_3d = build_3d_fn(smiles, y_tasks)
+        except Exception:
+            data_2d, data_3d = None, None
 
         if data_2d is not None and data_3d is not None:
             dataset_2d.append(data_2d)
